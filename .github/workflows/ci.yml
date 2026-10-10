@@ -9,6 +9,9 @@ name: tap guard
 #   * GitHub ubuntu runners do NOT ship Homebrew - hence setup-homebrew below.
 #   * on Homebrew 7 a third-party tap is not loadable until it is trusted, and
 #     `brew tap` alone does not do it - hence the explicit `brew trust`.
+#   * `macos-13` was dropped: it never scheduled, and Homebrew itself warns that
+#     GitHub is retiring macOS Intel runners. `macos-15-intel` is the current
+#     Intel label.
 #   * the install steps use the FULLY QUALIFIED name on purpose: a bare
 #     `brew install loom` resolves to the CASK named loom (the screen
 #     recorder, 0.379.4) and never reaches this formula. See README.md.
@@ -75,7 +78,7 @@ jobs:
           - os: ubuntu-latest
           - os: ubuntu-24.04-arm
           - os: macos-14
-          - os: macos-13
+          - os: macos-15-intel
     runs-on: ${{ matrix.os }}
     steps:
       - name: Install Homebrew if the runner has none
