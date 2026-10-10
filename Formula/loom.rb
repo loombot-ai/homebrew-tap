@@ -1,24 +1,20 @@
 class Loom < Formula
-  desc "A first-principles agent that runs on your own machine"
+  desc "First-principles agent that runs on your own machine"
   homepage "https://loombot.ai"
-  version "0.1.0"
   license "Apache-2.0"
 
   # ---------------------------------------------------------------------------
   # ONE PLACE TO CHANGE.
   #
-  # PLACEHOLDER: the v0.1.0 artifacts are NOT published yet, so the eight urls
-  # below do not resolve and `brew install loom` cannot download. Change ONLY
-  # this prefix once they are up; no other line in this file names a host.
-  #
-  # Candidates, in the order the owner prefers them:
-  #   https://downloads.loombot.dev/v0.1.0              (own DNS, CNAME by Cloudflare)
-  #   https://<bucket>.<account>.r2.dev/v0.1.0          (Cloudflare R2 public URL)
+  # PLACEHOLDER: the v0.1.0 artifacts are not published yet, so the eight urls
+  # below do not resolve and `brew install` cannot download. Change ONLY this
+  # prefix once they are up; no other line in this file names a host.
   #
   # Every sha256 below is a PREBUILT bare binary, copied verbatim from the
-  # release own SHA256SUMS. brew compiles nothing and fetches no source tarball.
+  # release own SHA256SUMS. brew compiles nothing and fetches no source tarball;
+  # the file name carries the target triple, which is why install globs.
   # ---------------------------------------------------------------------------
-  BASE_URL = "https://downloads.loombot.dev/v0.1.0"
+  BASE_URL = "https://downloads.loombot.dev/v0.1.0".freeze
 
   on_macos do
     on_arm do
@@ -65,8 +61,8 @@ class Loom < Formula
   end
 
   def install
-    # The artifacts are bare executables, not tarballs, and the file name
-    # carries the target triple - hence the glob rather than a literal name.
+    # Bare executables, not tarballs, and the file name carries the target
+    # triple - hence the glob rather than a literal name.
     bin.install Dir["loom-*"].first => "loom"
     resource("loomd").stage do
       bin.install Dir["loomd-*"].first => "loomd"
@@ -75,6 +71,6 @@ class Loom < Formula
 
   test do
     assert_match version.to_s, shell_output("#{bin}/loom --version")
-    assert_predicate bin/"loomd", :exist?
+    assert_path_exists bin/"loomd"
   end
 end
