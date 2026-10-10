@@ -5,9 +5,13 @@ name: tap guard
 # hash - which is what breaks when artifacts move to their final host.
 # So: audit always, install for real as soon as the base URL serves 200.
 #
-# The install steps use the FULLY QUALIFIED name on purpose. On Homebrew 7 a
-# bare `brew install loom` resolves to the CASK named loom (Loom the screen
-# recorder, 0.379.4) and never reaches this formula. See README.md.
+# Two things this file learned the hard way, both measured:
+#   * GitHub ubuntu runners do NOT ship Homebrew - hence setup-homebrew below.
+#   * on Homebrew 7 a third-party tap is not loadable until it is trusted, and
+#     `brew tap` alone does not do it - hence the explicit `brew trust`.
+#   * the install steps use the FULLY QUALIFIED name on purpose: a bare
+#     `brew install loom` resolves to the CASK named loom (the screen
+#     recorder, 0.379.4) and never reaches this formula. See README.md.
 
 on:
   push:
@@ -26,6 +30,7 @@ jobs:
     name: brew audit --strict
     runs-on: ubuntu-latest
     steps:
+      - uses: Homebrew/actions/setup-homebrew@master
       - name: Tap this repository
         run: brew tap "$TAP" "$REPO"
       - name: Audit the formula text
@@ -42,7 +47,7 @@ jobs:
         id: probe
         run: |
           set -euo pipefail
-          BASE=$(sed -n "s/^  BASE_URL = \"\(.*\)\"$/\1/p" Formula/loom.rb)
+          BASE=$(sed -n 's/^  BASE_URL = "\([^"]*\)".*$/\1/p' Formula/loom.rb)
           echo "BASE_URL=$BASE"
           CODE=$(curl -sS -o /dev/null -w "%{http_code}" -L \
             "$BASE/loom-0.1.0-x86_64-unknown-linux-gnu" || true)
@@ -51,7 +56,7 @@ jobs:
             echo "live=true" >> "$GITHUB_OUTPUT"
           else
             echo "live=false" >> "$GITHUB_OUTPUT"
-            echo "::notice title=artifacts not published yet::BASE_URL is still the placeholder, so the real install is skipped. It starts running by itself the moment that URL serves 200."
+            echo "::notice title=artifacts not published yet::BASE_URL is still unreachable, so the real install is skipped. It starts running by itself the moment that URL serves 200."
           fi
 
   install:
@@ -64,12 +69,15 @@ jobs:
         include:
           - os: ubuntu-latest
           - os: ubuntu-24.04-arm
-          - os: macos-13
           - os: macos-14
+          - os: macos-13
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Tap this repository
-        run: brew tap "$TAP" "$REPO"
+      - uses: Homebrew/actions/setup-homebrew@master
+      - name: Tap this repository and trust it
+        run: |
+          brew tap "$TAP" "$REPO"
+          brew trust "$TAP"
       - name: Install for real - catches a 404 or a bad sha256, which audit cannot
         run: brew install --formula "$TAP/loom"
       - name: Both commands the release promises
