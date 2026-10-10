@@ -30,7 +30,12 @@ jobs:
     name: brew audit --strict
     runs-on: ubuntu-latest
     steps:
-      - uses: Homebrew/actions/setup-homebrew@master
+      - name: Install Homebrew if the runner has none
+        run: |
+          if command -v brew >/dev/null 2>&1; then brew --version; exit 0; fi
+          NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+          echo "/home/linuxbrew/.linuxbrew/bin" >> "$GITHUB_PATH"
+          echo "/home/linuxbrew/.linuxbrew/sbin" >> "$GITHUB_PATH"
       - name: Tap this repository
         run: brew tap "$TAP" "$REPO"
       - name: Audit the formula text
@@ -73,7 +78,12 @@ jobs:
           - os: macos-13
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: Homebrew/actions/setup-homebrew@master
+      - name: Install Homebrew if the runner has none
+        run: |
+          if command -v brew >/dev/null 2>&1; then brew --version; exit 0; fi
+          NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+          echo "/home/linuxbrew/.linuxbrew/bin" >> "$GITHUB_PATH"
+          echo "/home/linuxbrew/.linuxbrew/sbin" >> "$GITHUB_PATH"
       - name: Tap this repository and trust it
         run: |
           brew tap "$TAP" "$REPO"
