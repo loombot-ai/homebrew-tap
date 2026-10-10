@@ -1,59 +1,74 @@
 # loom - Homebrew tap
 
-    brew install loombot/tap/loom
+    brew install --formula loombot/tap/loom
 
-## Read this before copying the two-line form
+That one line taps and installs in a single go, and it needs no `brew trust`.
+Everything below is a footnote to it.
 
-Do NOT write `brew install loom`. On Homebrew 7 that installs the CASK named
-`loom` - Loom the screen recorder - not this formula. Measured on Homebrew
-7.0.9, with this tap already tapped:
+## What does NOT work, and why
+
+Both facts measured on Homebrew 7.0.9, on macOS 15.7 (Intel) and on Ubuntu
+24.04.5 with linuxbrew.
+
+### `brew install loom` on macOS installs the WRONG software
+
+homebrew/cask has a cask named `loom` - Loom.app, the screen recorder, 0.379.4 -
+and it shadows this formula even with the tap already tapped:
 
     $ brew install loom
-    Warning: Treating loom as a cask. For the formula, use loomtest/tap/loom
+    Warning: Treating loom as a cask. For the formula, use loombot/tap/loom
              or specify the `--formula` flag.
-    ==> Fetching downloads for: loom
     ==> Installing Cask loom (0.379.4)
+    ==> Moving App 'Loom.app' to '/Applications/Loom.app'
 
-Use the fully qualified name. Homebrew prints the correct form itself:
+`brew info loom` and `brew upgrade loom` resolve to the cask as well. So does
+`brew upgrade loom` on Linux, where there is no cask installed to upgrade:
+`Warning: Treating loom as a cask` + `Error: Cask loom is not installed`. Use
+the fully qualified name for all of them.
 
-    brew install loombot/tap/loom     # taps and installs in one go
-    brew install --formula loom       # only if the tap is already present
+### The two-line form is refused on a machine that has not trusted the tap
 
-## Status: the formula ships, the artifacts do not yet
+    $ brew tap loombot/tap
+    $ brew install loom
+    Error: Refusing to load formula loombot/tap/loom from untrusted tap
+    loombot/tap. Run `brew trust loombot/tap` to trust it.
 
-`BASE_URL` at the top of `Formula/loom.rb` is a PLACEHOLDER
-(`https://downloads.loombot.dev/v0.1.0`) and nothing is served there, so no
-install can download yet. Change that ONE line once the artifacts are up; no
-other line in the formula names a host.
+If the bare name is what you want, trust the tap first:
 
-The eight `sha256` values are final: copied verbatim from the v0.1.0 release
-own `SHA256SUMS`, all of them PREBUILT bare binaries. brew compiles nothing.
+    brew tap loombot/tap
+    brew trust loombot/tap
+    brew install loom
+
+The qualified name skips that step: naming the tap explicitly IS the trust
+decision, so nothing is shadowed by surprise.
+
+## Status: published and live
+
+The v0.1.0 artifacts are served from Cloudflare R2 at
+`https://downloads.loombot.dev/v0.1.0/`, anonymously - no token, no account.
+That is the prefix `BASE_URL` names, and it is the only line in the formula
+that names a host.
+
+The eight sha256 values are final: copied verbatim from the release own
+`SHA256SUMS`, every one a PREBUILT bare binary. brew compiles nothing and
+fetches no source tarball.
 
 ## What it installs
 
-Both commands the release promises: `loom` and `loomd`. One artifact each per
-platform, picked by `on_macos`/`on_linux` x `on_arm`/`on_intel`, for four
-targets: `aarch64`/`x86_64` x `apple-darwin`/`unknown-linux-gnu`.
+Both commands the release promises, `loom` and `loomd`, one artifact each per
+platform, picked by `on_macos`/`on_linux` x `on_arm`/`on_intel` across the four
+targets `aarch64`/`x86_64` x `apple-darwin`/`unknown-linux-gnu`.
 
 ## Linux
 
-Homebrew runs on Linux, so the same commands are meant to cover it and the
-formula carries the two `on_linux` branches with real sha256 values. That is a
-claim about the formula text, NOT a test result - see MANIFEST-upload.md.
-
-## Verifying the formula without any hosting
-
-    tools/verify-local.sh <artifacts-dir>
-
-Runs a real `brew install` against the same formula with BASE_URL rewritten to
-the directory the artifacts already sit in. Proven this way: the platform
-branch, the bare-binary install, every sha256, the installed names, brew test,
-and a clean uninstall.
+Homebrew on Linux is supported and tested, not assumed: this tap was installed
+and uninstalled on Ubuntu 24.04.5 (linuxbrew 7.0.9, x86_64) and on GitHub
+ubuntu-24.04-arm (aarch64). See the CI job below.
 
 ## The CI guard
 
-`.github/workflows/ci.yml` runs `brew audit --strict` on every push, and a real
-`brew install` on four runners (linux x86_64, linux arm64, macOS intel, macOS
-arm) as soon as the base URL starts returning 200. audit checks the formula;
-only a real install catches a 404 or a wrong sha256 - which is what breaks when
-artifacts move.
+`.github/workflows/ci.yml` runs `brew audit --strict` on every push, then a real
+`brew install --formula` followed by the formula own `brew test` and a clean
+`brew uninstall` on four runners: ubuntu-latest, ubuntu-24.04-arm, macos-14 and
+macos-13. audit checks the formula text; only a real install catches a 404 or a
+wrong hash, which is what breaks when artifacts move host.
