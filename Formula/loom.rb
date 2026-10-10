@@ -1,5 +1,5 @@
 class Loom < Formula
-  desc "First-principles agent that runs on your own machine"
+  desc "First-principle agent that runs on your own machine"
   homepage "https://loombot.ai"
   license "Apache-2.0"
 
