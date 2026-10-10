@@ -6,9 +6,9 @@ class Loom < Formula
   # ---------------------------------------------------------------------------
   # ONE PLACE TO CHANGE.
   #
-  # PLACEHOLDER: the v0.1.0 artifacts are not published yet, so the eight urls
-  # below do not resolve and `brew install` cannot download. Change ONLY this
-  # prefix once they are up; no other line in this file names a host.
+  # The v0.1.0 artifacts are served from Cloudflare R2 behind this prefix and
+  # are anonymously downloadable. Change ONLY this line when they move again;
+  # no other line in this file names a host.
   #
   # Every sha256 below is a PREBUILT bare binary, copied verbatim from the
   # release own SHA256SUMS. brew compiles nothing and fetches no source tarball;
