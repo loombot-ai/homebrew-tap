@@ -1,0 +1,94 @@
+name: tap guard
+
+# The formula is one assertion: four urls plus eight sha256 values. `brew audit`
+# checks the formula text, but only a real install catches a 404 or a wrong
+# hash - which is what breaks when artifacts move to their final host.
+# So: audit always, install for real as soon as the base URL serves 200.
+#
+# The install steps use the FULLY QUALIFIED name on purpose. On Homebrew 7 a
+# bare `brew install loom` resolves to the CASK named loom (Loom the screen
+# recorder, 0.379.4) and never reaches this formula. See README.md.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  TAP: ${{ github.repository_owner }}/tap
+  REPO: https://github.com/${{ github.repository }}
+
+jobs:
+  audit:
+    name: brew audit --strict
+    runs-on: ubuntu-latest
+    steps:
+      - name: Tap this repository
+        run: brew tap "$TAP" "$REPO"
+      - name: Audit the formula text
+        run: brew audit --strict "$TAP/loom"
+
+  probe:
+    name: are the artifacts published yet
+    runs-on: ubuntu-latest
+    outputs:
+      live: ${{ steps.probe.outputs.live }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Anonymous GET on the url the formula points at
+        id: probe
+        run: |
+          set -euo pipefail
+          BASE=$(sed -n "s/^  BASE_URL = \"\(.*\)\"$/\1/p" Formula/loom.rb)
+          echo "BASE_URL=$BASE"
+          CODE=$(curl -sS -o /dev/null -w "%{http_code}" -L \
+            "$BASE/loom-0.1.0-x86_64-unknown-linux-gnu" || true)
+          echo "anonymous GET -> $CODE"
+          if [ "$CODE" = "200" ]; then
+            echo "live=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "live=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=artifacts not published yet::BASE_URL is still the placeholder, so the real install is skipped. It starts running by itself the moment that URL serves 200."
+          fi
+
+  install:
+    name: real brew install on ${{ matrix.os }}
+    needs: probe
+    if: needs.probe.outputs.live == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+          - os: ubuntu-24.04-arm
+          - os: macos-13
+          - os: macos-14
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Tap this repository
+        run: brew tap "$TAP" "$REPO"
+      - name: Install for real - catches a 404 or a bad sha256, which audit cannot
+        run: brew install --formula "$TAP/loom"
+      - name: Both commands the release promises
+        run: |
+          set -euo pipefail
+          command -v loom
+          command -v loomd
+      - name: The version is the formula own, not some other loom on PATH
+        run: |
+          set -euo pipefail
+          WANT=$(brew info --json=v2 --formula "$TAP/loom" \
+            | ruby -rjson -e 'puts JSON.parse(STDIN.read)["formulae"][0]["versions"]["stable"]')
+          GOT=$(loom --version)
+          echo "formula=$WANT binary=$GOT"
+          [ "$WANT" = "$GOT" ]
+      - name: The formula own test block
+        run: brew test "$TAP/loom"
+      - name: Uninstall leaves nothing behind
+        run: |
+          set -euo pipefail
+          brew uninstall --formula "$TAP/loom"
+          if command -v loom >/dev/null 2>&1; then echo "loom still on PATH"; exit 1; fi
