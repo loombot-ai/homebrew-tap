@@ -109,4 +109,9 @@ jobs:
         run: |
           set -euo pipefail
           brew uninstall --formula "$TAP/loom"
+          # `hash -r` is not optional: bash caches a command path once it has
+          # been run, so a bare `command -v loom` still answers with the
+          # deleted path and reads as a failed uninstall that is not one.
+          hash -r
           if command -v loom >/dev/null 2>&1; then echo "loom still on PATH"; exit 1; fi
+          test ! -e "$(brew --prefix)/bin/loom"
