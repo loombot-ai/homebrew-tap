@@ -15,7 +15,7 @@ HERE=$(cd "$(dirname "$0")/.." && pwd)
 
 WORK=$(mktemp -d)
 mkdir -p "$WORK/tap/Formula"
-sed "s|^  BASE_URL = \".*\"$|  BASE_URL = \"file://$ARTIFACTS\"|" \
+sed -E "s|(BASE_URL = \")[^\"]*|\1file://$ARTIFACTS|" \
   "$HERE/Formula/loom.rb" > "$WORK/tap/Formula/loom.rb"
 
 echo "== the one substituted line =="
@@ -34,11 +34,19 @@ git -C "$WORK/tap" -c user.email=v@v -c user.name=v commit -qm local-verify
 
 echo
 echo "== brew tap $TAPNAME $WORK/tap =="
+# RE-RUNNABLE, because the last run left its tap behind when it stopped part way: brew refuses to tap the
+# same name at a new directory ("remote mismatch"). --force skips the formula load, which is what an
+# untrusted tap cannot survive.
+brew untap "$TAPNAME" --force >/dev/null 2>&1 || true
 brew tap "$TAPNAME" "$WORK/tap"
 
 echo
 echo "== brew install loom =="
-brew install loom
+# A LOCAL tap is not trusted by default (Homebrew refuses to load its formula), and a bare name is
+# ambiguous while any other tap ships a formula called loom. Both are the machine's state, not the
+# formula's, so the script settles them itself.
+brew trust "$TAPNAME" >/dev/null 2>&1 || true
+brew install "$TAPNAME/loom"
 
 echo
 echo "== loom --version =="
@@ -51,12 +59,19 @@ command -v loomd
 
 echo
 echo "== brew test loom =="
-brew test loom
+brew test "$TAPNAME/loom"
 
 echo
 echo "== brew uninstall loom =="
-brew uninstall loom
-if command -v loom >/dev/null 2>&1; then echo "STILL ON PATH"; exit 1; fi
+brew uninstall "$TAPNAME/loom"
+# BREW'S COPY, not "anything called loom". A machine may have loom from deno, from the repository, or from
+# another package manager -- the author's does -- and that is not this formula failing. What has to be gone
+# is the one brew installed, in brew's own prefix.
+if [ -e "$(brew --prefix)/bin/loom" ]; then echo "brew's loom is still in the prefix"; exit 1; fi
+if command -v loom >/dev/null 2>&1; then
+  echo "note: a loom that is not brew's is still on PATH at $(command -v loom)"
+fi
+echo "brew's loom and loomd are gone from $(brew --prefix)/bin"
 echo "loom and loomd gone from PATH"
 
 echo
