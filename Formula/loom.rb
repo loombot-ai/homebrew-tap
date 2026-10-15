@@ -6,7 +6,7 @@ class Loom < Formula
   # ---------------------------------------------------------------------------
   # ONE PLACE TO CHANGE.
   #
-  # The v0.2.0 artifacts are served from Cloudflare R2 behind this prefix and
+  # The artifacts of whichever version BASE_URL names are served from Cloudflare R2 behind this
   # are anonymously downloadable. Change ONLY this line when they move again;
   # no other line in this file names a host.
   #
