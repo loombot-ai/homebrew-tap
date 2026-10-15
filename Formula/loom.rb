@@ -14,48 +14,48 @@ class Loom < Formula
   # release own SHA256SUMS. brew compiles nothing and fetches no source tarball;
   # the file name carries the target triple, which is why install globs.
   # ---------------------------------------------------------------------------
-  BASE_URL = "https://downloads.loombot.dev/v0.2.0".freeze
+  BASE_URL = "https://downloads.loombot.dev/v0.2.4".freeze
 
   on_macos do
     on_arm do
-      url "#{BASE_URL}/loom-0.2.0-aarch64-apple-darwin"
-      sha256 "88ddf8ca4019cac872edecb4f0b0a646b0a09a590cc92a079ad0e993e61425f4"
+      url "#{BASE_URL}/loom-0.2.4-aarch64-apple-darwin"
+      sha256 "0b943b04310e91f922e2bc1f86682375f0db24dc4e66c09c1abdaf0804bdfeab"
 
       resource "loomd" do
-        url "#{BASE_URL}/loomd-0.2.0-aarch64-apple-darwin"
-        sha256 "7b67d7804de9e2d6f51fe427124d23ef72d9209511c7f7b9611dfe8d62ee9f06"
+        url "#{BASE_URL}/loomd-0.2.4-aarch64-apple-darwin"
+        sha256 "a366039afe910067c47a89af418ce47d99a0342a8ca9a5c64170a797a22b6808"
       end
     end
 
     on_intel do
-      url "#{BASE_URL}/loom-0.2.0-x86_64-apple-darwin"
-      sha256 "9ab2bbbc949a280dd5aa31d2f8eb9a22ec8560100671825248a222c589829b1d"
+      url "#{BASE_URL}/loom-0.2.4-x86_64-apple-darwin"
+      sha256 "e4b8752e740318e0f9dba234fdbf3671a29be115ddf190fa2de3e06c1c34bdde"
 
       resource "loomd" do
-        url "#{BASE_URL}/loomd-0.2.0-x86_64-apple-darwin"
-        sha256 "705c0eac7ffaf205352609b3459698cbf7edcde2ea2655f56a9accb50ac1a7e7"
+        url "#{BASE_URL}/loomd-0.2.4-x86_64-apple-darwin"
+        sha256 "982a20c43c460e245611b257da0114782b35568d5457c57699ff3c7c8bdcb070"
       end
     end
   end
 
   on_linux do
     on_arm do
-      url "#{BASE_URL}/loom-0.2.0-aarch64-unknown-linux-gnu"
-      sha256 "f9d927aee390de2ab577cf5de2de198e299c66c626d94db65096c3746609dbbb"
+      url "#{BASE_URL}/loom-0.2.4-aarch64-unknown-linux-gnu"
+      sha256 "f69e13d005a17fa8c42dd05ae54328542505294197a2f244360a755f46bc0362"
 
       resource "loomd" do
-        url "#{BASE_URL}/loomd-0.2.0-aarch64-unknown-linux-gnu"
-        sha256 "b1a47049ceee2e7a1d10f57b346d0ee5ed570cb2e9e188be506891cca8fdfda7"
+        url "#{BASE_URL}/loomd-0.2.4-aarch64-unknown-linux-gnu"
+        sha256 "cddd751d99378f0e907874968c0bb599b088e1cb62a98e7b2596dee5465e3554"
       end
     end
 
     on_intel do
-      url "#{BASE_URL}/loom-0.2.0-x86_64-unknown-linux-gnu"
-      sha256 "700d4618c22054a7d4a079c0016156266304027047e0e0a61fc990737e0594e3"
+      url "#{BASE_URL}/loom-0.2.4-x86_64-unknown-linux-gnu"
+      sha256 "461d78d9d9da49358384ab2b70b24eb54f2ddc8c0df11c0f5171fd3c18464be7"
 
       resource "loomd" do
-        url "#{BASE_URL}/loomd-0.2.0-x86_64-unknown-linux-gnu"
-        sha256 "46e5ba886325f48ec6c1dc3500e289c4498e88496eb6427ea0af2b6f65a1539e"
+        url "#{BASE_URL}/loomd-0.2.4-x86_64-unknown-linux-gnu"
+        sha256 "90ed26a5172bdd51a2b840d68c53bbc7671870f399fa172b187185dbfdd0e245"
       end
     end
   end
