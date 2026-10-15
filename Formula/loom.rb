@@ -4,6 +4,24 @@ class Loom < Formula
   license "Apache-2.0"
 
   # ---------------------------------------------------------------------------
+  # THE ONE DEPENDENCY, AND WHY IT IS NOT OPTIONAL (2026-10-15). A compiled loom spawns a
+  # Deno child per repl - that child is what holds the repl's own read/write grant, so
+  # without a `deno` on PATH loom starts and then cannot run a single line of code:
+  #
+  #   [loom] the repl cannot start. a compiled loom needs the Deno CLI on PATH to run the repl
+  #
+  # Xiaohu hit exactly that on a machine where deno WAS installed, because the directory it
+  # lives in was not on PATH - which is the failure this line prevents. brew installs deno and
+  # links it where the binary will find it. `deno` is a Homebrew formula, so this is one word
+  # rather than a vendored runtime.
+  #
+  # ⚠️ The rest of the fix is in loom, not here: the binary should also look in the usual
+  # places (~/.deno/bin, /opt/homebrew/bin) rather than trusting PATH alone. This line makes
+  # the common case work; that change makes the uncommon case work.
+  # ---------------------------------------------------------------------------
+  depends_on "deno"
+
+  # ---------------------------------------------------------------------------
   # ONE PLACE TO CHANGE.
   #
   # The artifacts of whichever version BASE_URL names are served from Cloudflare R2 behind this
