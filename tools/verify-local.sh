@@ -3,8 +3,17 @@
 #
 # The formula text is the committed one; the ONLY substitution is BASE_URL,
 # rewritten to the directory the artifacts already sit in. Everything else -
-# the platform branch, the bare-binary (not tarball) install, the sha256, the
-# two installed command names - is exercised for real by a real brew.
+# the tarball unpack, the libexec layout, the bin symlinks, the sha256, the two
+# installed command names - is exercised for real by a real brew.
+#
+# THE ARTIFACTS DIR must hold the one file the formula names, e.g.
+# loom-bundle-0.3.2.tar.gz: since 0.3.x a release publishes ONE bundle rather
+# than eight per-target bare binaries.
+#
+# On a machine where brew cannot supply `deno` from a bottle (Intel macOS: there
+# is no bottle, so brew would build llvm + rust + deno from source, hours), pass
+# --ignore-dependencies below and let an already-installed `deno` be the one the
+# launcher finds. Read README.md "Intel macOS makes brew build Deno".
 #
 #   tools/verify-local.sh <artifacts-dir> [tap-name]
 set -euo pipefail

@@ -42,22 +42,53 @@ If the bare name is what you want, trust the tap first:
 The qualified name skips that step: naming the tap explicitly IS the trust
 decision, so nothing is shadowed by surprise.
 
-## Status: published and live
+## Status: published and live - 0.3.2
 
-The v0.1.0 artifacts are served from Cloudflare R2 at
-`https://downloads.loombot.dev/v0.1.0/`, anonymously - no token, no account.
-That is the prefix `BASE_URL` names, and it is the only line in the formula
-that names a host.
-
-The eight sha256 values are final: copied verbatim from the release own
-`SHA256SUMS`, every one a PREBUILT bare binary. brew compiles nothing and
-fetches no source tarball.
+The 0.3.2 bundle is served from Cloudflare R2 at
+`https://downloads.loombot.dev/v0.3.2/`, anonymously - no token, no account.
+That is the prefix `BASE_URL` names, and it is the only line in the formula that
+names a host. The formula's sha256 is the published artifact's, verbatim.
 
 ## What it installs
 
-Both commands the release promises, `loom` and `loomd`, one artifact each per
-platform, picked by `on_macos`/`on_linux` x `on_arm`/`on_intel` across the four
-targets `aarch64`/`x86_64` x `apple-darwin`/`unknown-linux-gnu`.
+ONE artifact for every platform: `loom-bundle-<version>.tar.gz`, the same bundle
+`install.sh` installs, so the two distribution paths cannot drift. It is
+JavaScript, not machine code, run by the `deno` this formula depends on - which
+is why there is no per-target branch left, and no `on_macos`/`on_linux` at all.
+
+What the tarball holds, and where each piece lands:
+
+    bin/loom, bin/loomd    -> libexec/bin/    one launcher, byte-identical under both
+                                              names; the name it is invoked as picks
+                                              which program runs ($0, before links)
+    loom.js, loomd.js      -> libexec/        the two bundles
+    DENO_VERSION           -> libexec/        the Deno version they are built against;
+                                              the launcher enforces >= that, < next major
+    loom/                  -> libexec/loom/   library, repl and compactor at the paths
+                                              the bundle reads at run time
+
+and `bin/loom` + `bin/loomd` in the Cellar are SYMLINKS into `libexec/bin`, because
+the launcher's root is the directory ABOVE the script it is running - it resolves
+its own symlinks to find `loom.js` and `DENO_VERSION` there.
+
+0.2.x shipped eight bare per-target binaries (`loom-<version>-<target-triple>`
+and `loomd-…`); those URLs 404 from 0.3.0 on, and so does the per-target bundle
+name (`/v0.3.2/loom-bundle-0.3.2-x86_64-unknown-linux-gnu.tar.gz` -> 404,
+measured). There is exactly one file per release now.
+
+### Intel macOS makes brew build Deno
+
+The bundle is platform-independent. The dependency is not: homebrew-core
+publishes `deno` bottles for arm64 macOS (sequoia, tahoe, golden_gate), arm64
+Linux and x86_64 Linux only, because Homebrew retired Intel x86_64 in September
+2026. On an Intel Mac `brew install --formula loombot/tap/loom` therefore builds
+llvm, rust, cmake and deno FROM SOURCE before it installs this formula - measured
+on macOS 15.7 / Homebrew 7.0.11, where brew announced 12 dependencies to install
+and was still compiling cmake after seven minutes. The cheap route there is to
+install Deno with Deno's own installer first
+(`curl -fsSL https://deno.land/install.sh | sh -s v2.9.7`) and then
+`brew install --ignore-dependencies --formula loombot/tap/loom`, which is what
+the tap's CI does on that one runner.
 
 ## Linux
 
@@ -70,5 +101,12 @@ ubuntu-24.04-arm (aarch64). See the CI job below.
 `.github/workflows/ci.yml` runs `brew audit --strict` on every push, then a real
 `brew install --formula` followed by the formula own `brew test` and a clean
 `brew uninstall` on four runners: ubuntu-latest, ubuntu-24.04-arm, macos-14 and
-macos-13. audit checks the formula text; only a real install catches a 404 or a
-wrong hash, which is what breaks when artifacts move host.
+macos-15-intel. audit checks the formula text; only a real install catches a 404
+or a wrong hash, which is what breaks when artifacts move host. That install is
+gated on a probe of the formula's OWN `url` line: until that URL serves 200 the
+install is skipped rather than failed, and it starts by itself when it does.
+(The probe used to curl a hard-coded `loom-0.1.0-…` name, which had been 404
+since 0.2.0 - so the install job had silently stopped running. Fixed
+2026-10-28.) On `macos-15-intel` the leg installs Deno without brew and passes
+`--ignore-dependencies`, for the reason above.
+

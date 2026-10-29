@@ -1,6 +1,25 @@
 # Where the artifacts live, and how they got there
 
+> **0.3.x, 2026-10-28 - read this before following anything below.** Everything
+> under `v0.1.0/` below is the HISTORICAL procedure for eight per-target bare
+> binaries, and 0.3.x does not publish those any more. One release now publishes
+> ONE file, the same bundle `install.sh` installs:
+>
+>     loom-downloads/v0.3.2/loom-bundle-0.3.2.tar.gz   2,126,191 bytes
+>     sha256 e197312c47e49809058c5590bace5aee36db97cc6168f6ee9c75fa96fedcd26d
+>
+> and the check that has to pass, per release, is one line:
+>
+>     URL=$(sed -n 's/^  url "\(.*\)"$/\1/p' Formula/loom.rb | head -n 1)
+>     URL=${URL//\#\{BASE_URL\}/https://downloads.loombot.dev/v0.3.2}
+>     curl -sSL "$URL" | shasum -a 256      # the formula's sha256, and nothing else
+>
+> The per-target names are gone and 404: `/v0.3.2/loom-bundle-0.3.2-x86_64-unknown-linux-gnu.tar.gz`
+> -> 404, measured. The bucket, the custom domain and the upload loop below are
+> unchanged - only the object names and the count are.
+
 ## Published, live, anonymous
+
 
 Cloudflare R2, bucket `loom-downloads`, nine objects under the `v0.1.0/` key
 prefix. Two URLs serve the same bytes:
