@@ -12,7 +12,7 @@ class Loom < Formula
   # PER RELEASE, TWO LINES CHANGE: this URL (which also carries the version - it is where brew
   # reads the formula's version from) and the sha256 under it.
   # ---------------------------------------------------------------------------
-  BASE_URL = "https://downloads.loombot.dev/v0.3.2".freeze
+  BASE_URL = "https://downloads.loombot.dev/v0.3.3".freeze
 
   # ---------------------------------------------------------------------------
   # ONE BUNDLE, EVERY PLATFORM (0.3.2, 2026-10-28).
@@ -29,8 +29,8 @@ class Loom < Formula
   # formula depends on. That is what makes one artifact serve every platform, and it is the
   # same reason the dependency comment below is not optional.
   # ---------------------------------------------------------------------------
-  url "#{BASE_URL}/loom-bundle-0.3.2.tar.gz"
-  sha256 "e197312c47e49809058c5590bace5aee36db97cc6168f6ee9c75fa96fedcd26d"
+  url "#{BASE_URL}/loom-bundle-0.3.3.tar.gz"
+  sha256 "eeb16721885deca23a1d133e291c18ab6576f270c24499caf58bc7087841d932"
 
   license "Apache-2.0"
 
