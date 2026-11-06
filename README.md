@@ -1,9 +1,11 @@
 # loom - Homebrew tap
 
-    brew install --formula loombot/tap/loom
+    brew install --formula loombot-ai/tap/loom
 
 That one line taps and installs in a single go, and it needs no `brew trust`.
 Everything below is a footnote to it.
+
+The tap lives in the `loombot-ai` org. The transcripts below were recorded before it was renamed, and their tap names have been corrected in place: the old `loombot/tap` no longer resolves (`git ls-remote` -> "Repository not found").
 
 ## What does NOT work, and why
 
@@ -16,7 +18,7 @@ homebrew/cask has a cask named `loom` - Loom.app, the screen recorder, 0.379.4 -
 and it shadows this formula even with the tap already tapped:
 
     $ brew install loom
-    Warning: Treating loom as a cask. For the formula, use loombot/tap/loom
+    Warning: Treating loom as a cask. For the formula, use loombot-ai/tap/loom
              or specify the `--formula` flag.
     ==> Installing Cask loom (0.379.4)
     ==> Moving App 'Loom.app' to '/Applications/Loom.app'
@@ -28,15 +30,15 @@ the fully qualified name for all of them.
 
 ### The two-line form is refused on a machine that has not trusted the tap
 
-    $ brew tap loombot/tap
+    $ brew tap loombot-ai/tap
     $ brew install loom
-    Error: Refusing to load formula loombot/tap/loom from untrusted tap
-    loombot/tap. Run `brew trust loombot/tap` to trust it.
+    Error: Refusing to load formula loombot-ai/tap/loom from untrusted tap
+    loombot-ai/tap. Run `brew trust loombot-ai/tap` to trust it.
 
 If the bare name is what you want, trust the tap first:
 
-    brew tap loombot/tap
-    brew trust loombot/tap
+    brew tap loombot-ai/tap
+    brew trust loombot-ai/tap
     brew install loom
 
 The qualified name skips that step: naming the tap explicitly IS the trust
@@ -81,13 +83,13 @@ measured). There is exactly one file per release now.
 The bundle is platform-independent. The dependency is not: homebrew-core
 publishes `deno` bottles for arm64 macOS (sequoia, tahoe, golden_gate), arm64
 Linux and x86_64 Linux only, because Homebrew retired Intel x86_64 in September
-2026. On an Intel Mac `brew install --formula loombot/tap/loom` therefore builds
+2026. On an Intel Mac `brew install --formula loombot-ai/tap/loom` therefore builds
 llvm, rust, cmake and deno FROM SOURCE before it installs this formula - measured
 on macOS 15.7 / Homebrew 7.0.11, where brew announced 12 dependencies to install
 and was still compiling cmake after seven minutes. The cheap route there is to
 install Deno with Deno's own installer first
 (`curl -fsSL https://deno.land/install.sh | sh -s v2.9.7`) and then
-`brew install --ignore-dependencies --formula loombot/tap/loom`, which is what
+`brew install --ignore-dependencies --formula loombot-ai/tap/loom`, which is what
 the tap's CI does on that one runner.
 
 ## Linux
