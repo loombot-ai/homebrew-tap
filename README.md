@@ -44,10 +44,10 @@ If the bare name is what you want, trust the tap first:
 The qualified name skips that step: naming the tap explicitly IS the trust
 decision, so nothing is shadowed by surprise.
 
-## Status: published and live - 0.3.3
+## Status: published and live - 0.3.4
 
-The 0.3.3 bundle is served from Cloudflare R2 at
-`https://downloads.loombot.dev/v0.3.3/`, anonymously - no token, no account.
+The 0.3.4 bundle is served from Cloudflare R2 at
+`https://downloads.loombot.dev/v0.3.4/`, anonymously - no token, no account.
 That is the prefix `BASE_URL` names, and it is the only line in the formula that
 names a host. The formula's sha256 is the published artifact's, verbatim.
 
