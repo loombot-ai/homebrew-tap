@@ -136,7 +136,7 @@ jobs:
         run: |
           set -euo pipefail
           command -v loom
-          command -v loomd
+          command -v loombot
       - name: The version is the formula own, not some other loom on PATH
         run: |
           set -euo pipefail
@@ -155,7 +155,7 @@ jobs:
           WANT=$(brew info --json=v2 --formula "$TAP/loom" \
             | ruby -rjson -e 'puts JSON.parse(STDIN.read)["formulae"][0]["versions"]["stable"]')
           [ "$(loom --version)" = "$WANT" ]
-          [ "$(loomd --version)" = "$WANT" ]
+          [ "$(loombot --version)" = "$WANT" ]
           # The dependency's whole point: a repl is a Deno child, and --doctor exits with that
           # row's answer. It needs no model and no network.
           loom --doctor | grep -F "RUNTIME   can this build run a repl here: YES"

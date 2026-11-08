@@ -60,21 +60,21 @@ is why there is no per-target branch left, and no `on_macos`/`on_linux` at all.
 
 What the tarball holds, and where each piece lands:
 
-    bin/loom, bin/loomd    -> libexec/bin/    one launcher, byte-identical under both
+    bin/loom, bin/loombot    -> libexec/bin/    one launcher, byte-identical under both
                                               names; the name it is invoked as picks
                                               which program runs ($0, before links)
-    loom.js, loomd.js      -> libexec/        the two bundles
+    loom.js, loombot.js      -> libexec/        the two bundles
     DENO_VERSION           -> libexec/        the Deno version they are built against;
                                               the launcher enforces >= that, < next major
     loom/                  -> libexec/loom/   library, repl and compactor at the paths
                                               the bundle reads at run time
 
-and `bin/loom` + `bin/loomd` in the Cellar are SYMLINKS into `libexec/bin`, because
+and `bin/loom` + `bin/loombot` in the Cellar are SYMLINKS into `libexec/bin`, because
 the launcher's root is the directory ABOVE the script it is running - it resolves
 its own symlinks to find `loom.js` and `DENO_VERSION` there.
 
 0.2.x shipped eight bare per-target binaries (`loom-<version>-<target-triple>`
-and `loomd-…`); those URLs 404 from 0.3.0 on, and so does the per-target bundle
+and `loombot-…`); those URLs 404 from 0.3.0 on, and so does the per-target bundle
 name (`/v0.3.2/loom-bundle-0.3.2-x86_64-unknown-linux-gnu.tar.gz` -> 404,
 measured). There is exactly one file per release now.
 

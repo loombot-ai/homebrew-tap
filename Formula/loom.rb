@@ -18,13 +18,13 @@ class Loom < Formula
   # ONE BUNDLE, EVERY PLATFORM (0.3.2, 2026-10-28).
   #
   # 0.2.x shipped eight PREBUILT BARE BINARIES - `loom-<version>-<target-triple>` and
-  # `loomd-…`, one pair per target - which is why this file used to branch four ways over
+  # `loombot-…`, one pair per target - which is why this file used to branch four ways over
   # `on_macos`/`on_linux` x `on_arm`/`on_intel` with eight sha256 values. 0.3.x publishes
   # ONE artifact for all four targets: `loom-bundle-<version>.tar.gz`, the same artifact
   # `install.sh` installs, so the two distribution paths cannot drift. The per-target names
   # 404 now (measured: `/v0.3.2/loom-bundle-0.3.2-x86_64-unknown-linux-gnu.tar.gz` -> 404).
   #
-  # The bundle is JavaScript, not machine code: `loom.js` and `loomd.js`, each already
+  # The bundle is JavaScript, not machine code: `loom.js` and `loombot.js`, each already
   # bundled by `deno bundle` (every module and npm package inside), run by the `deno` this
   # formula depends on. That is what makes one artifact serve every platform, and it is the
   # same reason the dependency comment below is not optional.
@@ -64,9 +64,9 @@ class Loom < Formula
   def install
     # WHAT IS IN THE TARBALL, and why the whole tree goes into libexec untouched:
     #
-    #   bin/loom, bin/loomd   the launcher - one shell script, byte-identical under both
+    #   bin/loom, bin/loombot  the launcher - one shell script, byte-identical under both
     #                         names; it decides WHICH program by the name it was invoked as
-    #   loom.js, loomd.js     the two bundles, run by `deno run --allow-all --no-config`
+    #   loom.js, loombot.js    the two bundles, run by `deno run --allow-all --no-config`
     #   DENO_VERSION          the Deno version they were built and verified against (2.9.7);
     #                         the launcher refuses anything outside `>= that, < next major`
     #   loom/                 the files the bundle reads at run time at the paths it expects
@@ -83,12 +83,12 @@ class Loom < Formula
     libexec.install Dir["*"]
 
     # THE SYMLINKS ARE NOT COSMETIC, they are load-bearing on both ends: the launcher takes
-    # the program name from `$0` BEFORE following links (so a link named `loomd` runs loomd),
+    # the program name from `$0` BEFORE following links (so a link named `loombot` runs loombot),
     # and it follows the link chain afterwards to find libexec. brew's own links are relative
     # (`../Cellar/loom/<version>/libexec/bin/loom`), which that loop handles - verified by a
     # real install, both commands, and one repl.
     bin.install_symlink libexec/"bin/loom"
-    bin.install_symlink libexec/"bin/loomd"
+    bin.install_symlink libexec/"bin/loombot"
   end
 
   def caveats
@@ -104,9 +104,9 @@ class Loom < Formula
 
   test do
     # The version brew resolved out of the file name, against what the bundle itself reports.
-    # Both commands, because 0.2.x installed a second artifact for loomd and this one does not.
+    # Both commands, because 0.2.x installed a second artifact for loombot and this one does not.
     assert_match version.to_s, shell_output("#{bin}/loom --version")
-    assert_match version.to_s, shell_output("#{bin}/loomd --version")
+    assert_match version.to_s, shell_output("#{bin}/loombot --version")
 
     # THE DEPENDENCY'S WHOLE POINT, measured rather than assumed: `--doctor`'s RUNTIME row
     # spawns a repl child, which is a Deno process, and exits with that row's answer. With no
