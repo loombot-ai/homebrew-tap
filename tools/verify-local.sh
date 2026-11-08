@@ -62,9 +62,9 @@ echo "== loom --version =="
 loom --version
 
 echo
-echo "== command -v loom / loomd =="
+echo "== command -v loom / loombot =="
 command -v loom
-command -v loomd
+command -v loombot
 
 echo
 echo "== brew test loom =="
@@ -80,8 +80,8 @@ if [ -e "$(brew --prefix)/bin/loom" ]; then echo "brew's loom is still in the pr
 if command -v loom >/dev/null 2>&1; then
   echo "note: a loom that is not brew's is still on PATH at $(command -v loom)"
 fi
-echo "brew's loom and loomd are gone from $(brew --prefix)/bin"
-echo "loom and loomd gone from PATH"
+echo "brew's loom and loombot are gone from $(brew --prefix)/bin"
+echo "loom and loombot gone from PATH"
 
 echo
 echo "== cleanup =="
