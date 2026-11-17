@@ -28,9 +28,9 @@ class Loom < Formula
   # formula depends on. That is what makes one artifact serve every platform, and it is the
   # same reason the dependency comment below is not optional.
   # ---------------------------------------------------------------------------
-  version "0.3.6"
+  version "0.3.7"
   url "https://downloads.loombot.dev/v#{version}/loom-bundle-#{version}.tar.gz"
-  sha256 "2ae20ad701b0a56cac135278afe75c910fa17c0d54ae0ba762aa5b322689515e"
+  sha256 "44ec45ecb5649877c6661acd4de6fe7d287e2142860e2341e4d8b139daa5b1d4"
 
   license "Apache-2.0"
 
