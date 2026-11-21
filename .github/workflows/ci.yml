@@ -16,20 +16,24 @@ name: tap guard
 #   * the install steps use the FULLY QUALIFIED name on purpose: a bare
 #     `brew install loom` resolves to the CASK named loom (the screen
 #     recorder, 0.379.4) and never reaches this formula. See README.md.
-#   * THE PROBE HAS TO FOLLOW THE FORMULA (measured 2026-10-28). It used to curl a hard-coded
-#     `loom-0.1.0-x86_64-unknown-linux-gnu`, a name no release after 0.1.0 publishes; with
-#     BASE_URL at /v0.2.5 that URL 404s, so `live` was ALWAYS false and the install job
-#     silently never ran. It now reads the formula's own `url` line and substitutes BASE_URL
-#     into it, so it tracks whatever the formula points at.
+#   * THE PROBE HAS TO FOLLOW THE FORMULA, and twice it stopped doing so silently (measured
+#     2026-10-28, again 2026-11-12). First a hard-coded `loom-0.1.0-x86_64-unknown-linux-gnu`,
+#     a name no release after 0.1.0 publishes: 404, `live` ALWAYS false, the install job never
+#     ran. Then a substitution of a `BASE_URL` constant the formula no longer had, which left a
+#     literal `#{version}` in the URL: 404 again, all four legs skipped, and the run was green.
+#     It now takes the formula's one `version` literal and substitutes that, and fails the job
+#     if anything unsubstituted is left in the URL.
 #   * `deno` HAS NO INTEL-MACOS BOTTLE, and there will not be one: homebrew-core publishes
 #     deno bottles for arm64 macOS (sequoia/tahoe/golden_gate), arm64 Linux and x86_64 Linux
-#     only, because Homebrew retired Intel x86_64 in September 2026. On `macos-15-intel` a
-#     plain `brew install` therefore builds llvm + rust + cmake + deno FROM SOURCE - hours -
-#     and the job would time out. That one leg installs Deno with Deno's own installer and
-#     passes `--ignore-dependencies`, which still exercises everything this tap owns: the URL,
-#     the sha256, the unpacked layout, the symlinks, both command names and one real repl.
-#     `brew test` is skipped there for the same reason: it refuses to run when a dependency
-#     is not installed.
+#     only, because Homebrew retired Intel x86_64 in September 2026. Until 2026-11-12 the
+#     formula depended on it anyway, so on `macos-15-intel` brew built llvm + rust + cmake +
+#     deno FROM SOURCE - hours - and the leg needed `--ignore-dependencies`. The formula no
+#     longer depends on `deno` on Intel macOS (Formula/loom.rb), so that leg now runs the same
+#     plain `brew install --formula` a user runs; it installs Deno with Deno's own installer
+#     itself, because the bundle still needs one at run time (the launcher refuses a wrong
+#     version with a sentence). It asserts the formula's own three checks by hand instead of
+#     through `brew test`, which is the one thing that stays different: the assertions are the
+#     same commands with the same expected text.
 
 on:
   push:
@@ -70,13 +74,22 @@ jobs:
         id: probe
         run: |
           set -euo pipefail
-          BASE=$(sed -n 's/^  BASE_URL = "\([^"]*\)".*$/\1/p' Formula/loom.rb)
-          echo "BASE_URL=$BASE"
-          # THE FORMULA'S OWN url LINE, with the one interpolated constant put back. Reading it
+          # THE FORMULA'S OWN url LINE, with its ONE interpolated constant put back. Reading it
           # instead of restating a file name is the whole point: the version lives in that file
           # name, so a probe that names a file itself goes stale at the next release - and did.
+          #
+          # This has now been wrong twice, in the same way: it stopped following the formula and
+          # nothing said so. The hard-coded `loom-0.1.0-…` name 404'd from 0.2.0 until 2026-10-28;
+          # then it substituted a `BASE_URL` constant the formula no longer had, which left a
+          # literal `#{version}` in the URL (-> 404, `live=false`) and silently skipped the whole
+          # install job. So: version it is, asserted non-empty here rather than assumed, and the
+          # substitution is checked afterwards.
+          VERSION=$(sed -n 's/^  version "\(.*\)"$/\1/p' Formula/loom.rb | head -n 1)
+          [ -n "$VERSION" ] || { echo "no version literal in Formula/loom.rb"; exit 1; }
+          echo "version=$VERSION"
           URL=$(sed -n 's/^  url "\(.*\)"$/\1/p' Formula/loom.rb | head -n 1)
-          URL=${URL//\#\{BASE_URL\}/$BASE}
+          URL=${URL//\#\{version\}/$VERSION}
+          case $URL in *'#{'*) echo "the url line interpolates something this probe cannot resolve: $URL"; exit 1 ;; esac
           echo "probe: $URL"
           CODE=$(curl -sS -o /dev/null -w "%{http_code}" -L "$URL" || true)
           echo "anonymous GET -> $CODE"
@@ -116,22 +129,22 @@ jobs:
         run: |
           brew tap "$TAP" "$REPO"
           brew trust "$TAP"
-      - name: Deno from Deno's installer - the platform brew cannot bottle it on
+      - name: Deno from Deno's installer - the platform brew does not install one on
         if: matrix.brew_deps == false
         run: |
           set -euo pipefail
-          # v2.9.7 is the floor the bundle's own launcher accepts (`>= 2.9.7, < 3.0`), which is
-          # the version the release is built against and ships in the bundle's DENO_VERSION.
+          # The formula has no `deno` dependency on this platform (no Intel-macOS bottle exists),
+          # so the bundle gets its runtime the way a user there does: Deno's own installer. v2.9.7
+          # is the floor the bundle's launcher accepts (`>= 2.9.7, < 3.0`), which is the version
+          # the release is built against and ships in the bundle's DENO_VERSION.
           curl -fsSL https://deno.land/install.sh | sh -s v2.9.7
           echo "$HOME/.deno/bin" >> "$GITHUB_PATH"
       - name: Install for real - catches a 404 or a bad sha256, which audit cannot
         run: |
           set -euo pipefail
-          if [ "${{ matrix.brew_deps }}" = "true" ]; then
-            brew install --formula "$TAP/loom"
-          else
-            brew install --formula --ignore-dependencies "$TAP/loom"
-          fi
+          # The same command a user types on every one of the four runners: the formula installs
+          # its own `deno` where brew can bottle it, and needs none where brew cannot.
+          brew install --formula "$TAP/loom"
       - name: Both commands the release promises
         run: |
           set -euo pipefail
