@@ -30,7 +30,7 @@ class Loom < Formula
   # ---------------------------------------------------------------------------
   version "0.3.7"
   url "https://downloads.loombot.dev/v#{version}/loom-bundle-#{version}.tar.gz"
-  sha256 "44ec45ecb5649877c6661acd4de6fe7d287e2142860e2341e4d8b139daa5b1d4"
+  sha256 "01a9370d5e0a8679f847a6d28410a4f822e2b657bbac7f83ee8e4fee0c0d69bb"
 
   license "Apache-2.0"
 
