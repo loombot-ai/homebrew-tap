@@ -67,14 +67,23 @@ class Loom < Formula
   # ~/.deno/bin, which is where Deno's own installer writes the binary - hence the `export PATH`
   # line in the caveat.
   # ---------------------------------------------------------------------------
-  # NO `deno` DEPENDENCY ON macOS, ON EITHER ARCHITECTURE (measured 2026-11-12 on Homebrew 7.0.15).
+  # WHERE BREW HAS A BOTTLE, TAKE IT - measured from the API on 2026-11-12, not from `brew info` on one machine:
+  # `formulae.brew.sh/api/formula/deno.json` lists `arm64_golden_gate, arm64_linux, arm64_sequoia, arm64_tahoe,
+  # x86_64_linux` - and NO x86_64 macOS tag, because Homebrew retired Intel macOS in September 2026. So an
+  # Apple Silicon Mac and a Linux box get Deno poured in a second, and an Intel Mac gets no dependency at all
+  # (there, `depends_on "deno"` means llvm + rust + cmake + ninja + a full Xcode: hours, measured).
   #
-  # The formula used to keep `depends_on "deno"` on Apple Silicon on the belief that brew had an arm64
-  # bottle. `brew info deno` here shows NO bottle at all - only `Build (6): cmake, lld, llvm, ninja,
-  # pkgconf, rust` and `Requirements: Build: Xcode >= 15.0 (on macOS)` - so on the owner's Mac, and on
-  # any Mac, that dependency builds Deno from source: hours, and a full Xcode. The bundle is JavaScript
-  # and needs nothing architecture-specific, so the launcher runs the `deno` on PATH and refuses a wrong
-  # one with a sentence naming the range and the command that installs it.
+  # A macOS older than the bottled ones (`arm64_sonoma` and before) would also build from source; that is the
+  # same trade a person makes with any unbottled formula, and the caveat's command is what unblocks them.
+  on_macos do
+    on_arm do
+      depends_on "deno"
+    end
+  end
+
+  on_linux do
+    depends_on "deno"
+  end
 
   def install
     # WHAT IS IN THE TARBALL, and why the whole tree goes into libexec untouched:
@@ -124,20 +133,20 @@ class Loom < Formula
       #{opt_libexec}/loom/library.
     EOS
 
-    text += <<~EOS
+    if OS.mac? && Hardware::CPU.intel?
+      text += <<~EOS
 
-      ⚠️  THIS FORMULA DOES NOT INSTALL DENO. `brew info deno` has no bottle on macOS (only build
-      dependencies: llvm, rust, cmake, ninja, and a full Xcode), so a dependency on it means
-      building Deno from source for hours. loom runs the `deno` on your PATH instead, and refuses
-      anything outside >= 2.9.7, < 3.0 with a sentence naming that range. If you have none, or an
-      older one:
+        ⚠️  Intel Mac: brew has no `deno` bottle for this platform, so this formula does NOT
+        install Deno - it runs the one on your PATH, and refuses anything outside
+        >= 2.9.7, < 3.0 with a sentence naming that range. If you have no deno, or an older one:
 
-        curl -fsSL https://deno.land/install.sh | sh -s v2.9.7
-        export PATH="$HOME/.deno/bin:$PATH"
+          curl -fsSL https://deno.land/install.sh | sh -s v2.9.7
+          export PATH="$HOME/.deno/bin:$PATH"
 
-      The installer writes deno into ~/.deno/bin and does not put it on PATH for you. To check the
-      result, `loom --doctor` answers whether the runtime loom can see will run a repl.
-    EOS
+        The installer writes deno into ~/.deno/bin and does not put it on PATH for you. To check
+        the result, `loom --doctor` answers whether the runtime loom can see will run a repl.
+      EOS
+    end
 
     text
   end
