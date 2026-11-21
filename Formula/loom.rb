@@ -35,31 +35,47 @@ class Loom < Formula
   license "Apache-2.0"
 
   # ---------------------------------------------------------------------------
-  # THE ONE DEPENDENCY, AND WHY IT IS NOT OPTIONAL (2026-10-15). A compiled loom spawns a
+  # THE ONE DEPENDENCY, AND WHERE BREW CAN BOTTLE IT (2026-11-12). A compiled loom spawns a
   # Deno child per repl - that child is what holds the repl's own read/write grant, so
   # without a `deno` on PATH loom starts and then cannot run a single line of code:
   #
   #   [loom] the repl cannot start. a compiled loom needs the Deno CLI on PATH to run the repl
   #
-  # Xiaohu hit exactly that on a machine where deno WAS installed, because the directory it
-  # lives in was not on PATH - which is the failure this line prevents. brew installs deno and
-  # links it where the binary will find it. `deno` is a Homebrew formula, so this is one word
-  # rather than a vendored runtime.
+  # ...which is what `depends_on "deno"` prevents wherever brew can supply it: brew installs
+  # deno and links it where the binary will find it. `deno` is a Homebrew formula, so this is
+  # one word rather than a vendored runtime.
   #
-  # ⚠️ The rest of the fix is in loom, not here: the binary should also look in the usual
-  # places (~/.deno/bin, /opt/homebrew/bin) rather than trusting PATH alone. This line makes
-  # the common case work; that change makes the uncommon case work.
+  # ⚠️ NOT ON INTEL MACOS (owner's decision, 2026-11-12). homebrew-core publishes `deno`
+  # bottles for arm64 macOS (`arm64_sequoia arm64_tahoe arm64_golden_gate`), arm64 Linux and
+  # x86_64 Linux only, because Homebrew retired Intel x86_64 in September 2026. There the
+  # dependency installs no package: it starts a source build of llvm, rust, cmake, ninja and
+  # deno (hours), and on the owner's machine `brew reinstall` did not fail politely - it failed
+  # THIS formula and installed nothing:
   #
-  # ⚠️ MEASURED 2026-10-28, and it is Homebrew's business rather than this formula's:
-  # homebrew-core publishes `deno` bottles for arm64 macOS, arm64 Linux and x86_64 Linux only
-  # (`arm64_sequoia arm64_tahoe arm64_golden_gate arm64_linux x86_64_linux`) - there is no
-  # Intel-macOS bottle, because Homebrew retired that platform in September 2026. On an Intel
-  # Mac this dependency therefore builds Deno FROM SOURCE (llvm, rust, cmake, ninja: hours),
-  # which is what `brew install` will do there. The bundle itself is JavaScript and needs
-  # nothing architecture-specific, so the formula is correct on Intel; only brew's route to
-  # `deno` is expensive. See README.md.
+  #   deno: A full installation of Xcode.app 15.0 is required to compile this software.
+  #   Installing just the Command Line Tools is not sufficient.
+  #   Error: An unsatisfied requirement failed this build.
+  #
+  # ...leaving the loom from an earlier release in the Cellar (0.3.4), while the one actually
+  # used was ~/.deno/bin/loom. The bundle is JavaScript and needs nothing architecture-specific,
+  # so on Intel it runs the `deno` already on PATH and the launcher refuses a wrong one with a
+  # sentence naming the range and the command that installs it - said at install time by
+  # #caveats, before the first command is ever typed. So: bottle-backed platforms keep the
+  # dependency, Intel macOS has none, and `brew install` succeeds there in seconds.
+  #
+  # ⚠️ The rest is in loom, not here: the launcher trusts PATH alone rather than also looking in
+  # ~/.deno/bin, which is where Deno's own installer writes the binary - hence the `export PATH`
+  # line in the caveat.
   # ---------------------------------------------------------------------------
-  depends_on "deno"
+  on_macos do
+    on_arm do
+      depends_on "deno"
+    end
+  end
+
+  on_linux do
+    depends_on "deno"
+  end
 
   def install
     # WHAT IS IN THE TARBALL, and why the whole tree goes into libexec untouched:
@@ -91,15 +107,40 @@ class Loom < Formula
     bin.install_symlink libexec/"bin/loombot"
   end
 
+  # THE PREREQUISITE, SAID WHERE A PERSON LOOKS AFTER INSTALLING (2026-11-12). On Intel macOS
+  # this formula does not depend on `deno` (see the class body), so brew installs a working
+  # bundle with no runtime at all - and the first thing that goes wrong is the first `loom`
+  # command, whose launcher refuses with a good sentence that nobody reads because nobody types
+  # a command before installing. A caveat is read at exactly that moment: it names the
+  # prerequisite, the range the launcher enforces, and the command that installs it. The literal
+  # 2.9.7 is the number the bundle ships in its own DENO_VERSION file and the floor the launcher
+  # enforces; it moves only when a release's DENO_VERSION does.
   def caveats
-    <<~EOS
-      loom runs on the Deno this formula installs with it. A repl is a Deno child process, so
-      `deno` has to stay on PATH for loom to run a line of code.
+    text = <<~EOS
+      loom runs on Deno: a repl is a Deno child process, so `deno` has to stay on PATH for loom
+      to run a line of code.
 
       Both commands share one bundle: #{opt_libexec}/bin holds the launcher, and the symlinks
       in #{opt_bin} point at it. The bundle also reads its own library from
       #{opt_libexec}/loom/library.
     EOS
+
+    if OS.mac? && Hardware::CPU.intel?
+      text += <<~EOS
+
+        ⚠️  Intel Mac: brew has no `deno` bottle for this platform, so this formula does NOT
+        install Deno - it runs the one on your PATH, and refuses anything outside
+        >= 2.9.7, < 3.0 with a sentence naming that range. If you have no deno, or an older one:
+
+          curl -fsSL https://deno.land/install.sh | sh -s v2.9.7
+          export PATH="$HOME/.deno/bin:$PATH"
+
+        The installer writes deno into ~/.deno/bin and does not put it on PATH for you. To check
+        the result, `loom --doctor` answers whether the runtime loom can see will run a repl.
+      EOS
+    end
+
+    text
   end
 
   test do
@@ -108,10 +149,11 @@ class Loom < Formula
     assert_match version.to_s, shell_output("#{bin}/loom --version")
     assert_match version.to_s, shell_output("#{bin}/loombot --version")
 
-    # THE DEPENDENCY'S WHOLE POINT, measured rather than assumed: `--doctor`'s RUNTIME row
-    # spawns a repl child, which is a Deno process, and exits with that row's answer. With no
-    # `deno` on PATH this line fails with "the repl cannot start" - which is exactly the
-    # failure `depends_on "deno"` is here to prevent. No model, no network.
+    # THE RUNTIME, measured rather than assumed: `--doctor`'s RUNTIME row spawns a repl child,
+    # which is a Deno process, and exits with that row's answer. With no `deno` on PATH this
+    # line fails with "the repl cannot start" - what `depends_on "deno"` prevents on the
+    # platforms brew can bottle it for, and what the caveat's installer command prevents on
+    # Intel macOS, where this formula has no such dependency. No model, no network.
     assert_match "RUNTIME   can this build run a repl here: YES", shell_output("#{bin}/loom --doctor")
   end
 end
